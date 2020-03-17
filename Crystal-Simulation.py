@@ -1,151 +1,93 @@
-# from https://stackoverflow.com/questions/20515554
 import numpy as np
+from scipy.spatial import Voronoi, ConvexHull, voronoi_plot_2d
 import matplotlib.pyplot as plt
-from scipy.spatial import Voronoi,ConvexHull,voronoi_plot_2d
 
-def voronoi_finite_polygons_2d(vor, radius=None):
-    """
-    Reconstruct infinite voronoi regions in a 2D diagram to finite
-    regions.
-
-    Parameters
-    ----------
-    vor : Voronoi
-        Input diagram
-    radius : float, optional
-        Distance to 'points at infinity'.
-
-    Returns
-    -------
-    regions : list of tuples
-        Indices of vertices in each revised Voronoi regions.
-    vertices : list of tuples
-        Coordinates for revised Voronoi vertices. Same as coordinates
-        of input vertices, with 'points at infinity' appended to the
-        end.
-
-    """
-
-    if vor.points.shape[1] != 2:
-        raise ValueError("Requires 2D input")
-
-    new_regions = []
-    new_vertices = vor.vertices.tolist()
-
-    center = vor.points.mean(axis=0)
-    if radius is None:
-        radius = vor.points.ptp().max()*2
-
-    # Construct a map containing all ridges for a given point
-    all_ridges = {}
-    for (p1, p2), (v1, v2) in zip(vor.ridge_points, vor.ridge_vertices):
-        all_ridges.setdefault(p1, []).append((p2, v1, v2))
-        all_ridges.setdefault(p2, []).append((p1, v1, v2))
-
-    # Reconstruct infinite regions
-    for p1, region in enumerate(vor.point_region):
-        vertices = vor.regions[region]
-
-        if all(v >= 0 for v in vertices):
-            # finite region
-            new_regions.append(vertices)
-            continue
-
-        # reconstruct a non-finite region
-        ridges = all_ridges[p1]
-        new_region = [v for v in vertices if v >= 0]
-
-        for p2, v1, v2 in ridges:
-            if v2 < 0:
-                v1, v2 = v2, v1
-            if v1 >= 0:
-                # finite ridge: already in the region
-                continue
-
-            # Compute the missing endpoint of an infinite ridge
-
-            t = vor.points[p2] - vor.points[p1] # tangent
-            t /= np.linalg.norm(t)
-            n = np.array([-t[1], t[0]])  # normal
-
-            midpoint = vor.points[[p1, p2]].mean(axis=0)
-            direction = np.sign(np.dot(midpoint - center, n)) * n
-            far_point = vor.vertices[v2] + direction * radius
-
-            new_region.append(len(new_vertices))
-            new_vertices.append(far_point.tolist())
-
-        # sort region counterclockwise
-        vs = np.asarray([new_vertices[v] for v in new_region])
-        c = vs.mean(axis=0)
-        angles = np.arctan2(vs[:,1] - c[1], vs[:,0] - c[0])
-        new_region = np.array(new_region)[np.argsort(angles)]
-
-        # finish
-        new_regions.append(new_region.tolist())
-
-    return new_regions, np.asarray(new_vertices)
-
-# make up data points
-# np.random.seed(1234)
-np.random.seed(370)
-points = np.random.rand(150, 2)
-# points = np.array([[0, 0], [1, 1], [2, 0], [1, 2]]) # triang
-# points = np.array([[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2],
-#                    [2, 0], [2, 1], [2, 2]])
-# compute Voronoi tesselation
-vor = Voronoi(points)
-
-# plot
-regions, vertices = voronoi_finite_polygons_2d(vor)
-'''
-print "--"
-print regions
-print "--"
-print vertices
-'''
-
-# colorize
-for region in regions:
-    polygon = vertices[region]
-    plt.fill(*zip(*polygon), alpha=0.4)
-
-plt.plot(points[:,0], points[:,1], 'ko')
-# plt.axis('equal')
-plt.xlim(vor.min_bound[0] - 0.1, vor.max_bound[0] + 0.1)
-plt.ylim(vor.min_bound[1] - 0.1, vor.max_bound[1] + 0.1)
-# plt.xlim(0,1)
-# plt.ylim(0,1)
-
-# plt.savefig('voro.png')
-plt.show()
-
-# voronoi_plot_2d(vor);
 
 # from https://stackoverflow.com/questions/19634993
+# also useful: https://stackoverflow.com/questions/20515554
 def voronoi_volumes(points):
     v = Voronoi(points)
     vol = np.zeros(v.npoints)
     for i, reg_num in enumerate(v.point_region):
         indices = v.regions[reg_num]
-        if -1 in indices: # some regions can be opened
+        if -1 in indices:  # some regions can be opened
             vol[i] = np.inf
-        #             if in 2d modifiy -1 to get bounday volume
         else:
             vol[i] = ConvexHull(v.vertices[indices]).volume
     return vol
-print( vor.vertices[vor.regions[1]])
-# vor.point_region
 
-vol=voronoi_volumes(points)
-vol=vol[vol!=np.inf]
-# print(sorted(vol))
-plt.title('Sorted Area of Each Cell')
-plt.plot(sorted(vol)[:-1],'+');
+
+# giant cells
+points = np.array([[0, 0],
+                   [0, 2],
+                   # [0, -2],
+                   [2, 0],
+                   [-2, 0],
+                   [0, 1],
+                   # [0, -1],
+                   [1, 0 - 1 / 25],
+                   [-1, 0]])
+voronoi_plot_2d(Voronoi(points))
+plt.title('giant cells\n{}'.format(voronoi_volumes(points)))
 plt.show()
-# look into huge cells, maybe luck, average over huge cells?
-plt.title('Sorted Area of Each Cell (w/o big cells)')
-plt.plot(sorted(vol)[:-4],'+');
-# plt.show()
-plt.title('Hist of Plot Above')
-plt.hist(sorted(vol)[:-4]);
+
+# normal example
+points = np.array([[0, 0],
+                   [0, 2],
+                   [0, -2],
+                   [2, 0],
+                   [-2, 0],
+                   [0, 1],
+                   [0, -1],
+                   [1, 0],
+                   [-1, 0]])
+voronoi_plot_2d(Voronoi(points))
+plt.title('normal example\n{}'.format(voronoi_volumes(points)))
+plt.show()
+
+np.random.seed(370)
+# num_pts = 10 ** 5
+num_pts = 10 ** 2 // 2
+points = np.random.rand(num_pts, 2)
+
+volumes_ = np.sort(voronoi_volumes(points))
+
+# filter out inf cells
+v_no_inf = volumes_[volumes_ != np.inf]
+
+cum_no_inf = np.cumsum(v_no_inf)
+
+num_biggr = np.count_nonzero(cum_no_inf > 1)
+
+# want sum(volumes) close to 1
+# look around above/below 1, choose whichever closer
+crit_pts = cum_no_inf[-num_biggr - 1:-num_biggr + 2]
+
+print(crit_pts,
+      cum_no_inf[-num_biggr],
+      abs(crit_pts - 1),
+      'argmin: {}'.format(np.argmin(abs(crit_pts - 1))),
+      'num_biggr: {}'.format(num_biggr),
+      sep='\n')
+
+# ab1 means above/below 1
+ab1 = np.argmin(abs(crit_pts - 1))
+volumes = v_no_inf[:-num_biggr + ab1]
+print(np.sum(v_no_inf))
+print(np.sum(volumes))
+
+plt.title('Area of Each Cell (with giants)')
+plt.plot(volumes_, '+')
+plt.show()
+
+plt.title('Area of Each Cell')
+plt.plot(volumes, '+')
+plt.show()
+
+plt.title('cumsum Area of Each Cell')
+plt.plot(np.cumsum(volumes), '+')
+plt.show()
+
+plt.title('Hist of Area Plot')
+plt.hist(volumes)
+plt.show()
