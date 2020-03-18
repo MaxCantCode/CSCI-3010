@@ -16,7 +16,7 @@ def voronoi_volumes(points):
             vol[i] = ConvexHull(v.vertices[indices]).volume
     return vol
 
-
+# if False:
 if True:  # toggle for giant demo
     # giant cells
     points = np.array([[0, 0],
