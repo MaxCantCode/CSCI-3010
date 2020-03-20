@@ -49,15 +49,15 @@ volumes_ = np.sort(voronoi_volumes(points))
 # filter out inf cells
 v_no_inf = volumes_[volumes_ != np.inf]
 
-cum_no_inf = np.cumsum(v_no_inf)
-
-num_biggr = np.count_nonzero(cum_no_inf > 1)
-
 # want sum(volumes) close to 1
+cum_no_inf = np.cumsum(v_no_inf)
+num_biggr = len(cum_no_inf) - np.searchsorted(cum_no_inf, 1)
+
 # look around above/below 1, choose whichever closer
 crit_pts = cum_no_inf[-num_biggr - 1:-num_biggr + 2]
 
-if True:  # for num_pts=15<20
+# if True:  # for num_pts=15<20
+if False:
     try:
         np.argmin(abs(crit_pts - 1))
     except ValueError as e:
@@ -79,7 +79,8 @@ volumes = v_no_inf if len(v_no_inf[:-num_biggr + ab1]) == 0 else v_no_inf[:-num_
 print('vol sum before:', np.sum(v_no_inf))
 print('vol sum after:', np.sum(volumes))
 
-if True:
+# if False:
+if True:  # toggle plots
     plt.title('Volume of Each Cell (with giants)')
     plt.plot(volumes_, '+')
     plt.show()
