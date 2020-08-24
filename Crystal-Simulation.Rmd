@@ -1,4 +1,14 @@
+# Run instructions
+- import into https://rstudio.cloud/project
+- in the R console, run `install.packages("reticulate")`
+- in the terminal, run `pip install scipy matplotlib`
+- then u can knit
+
 ```{r setup, include=FALSE}
+# export PATH=~/.local/share/r-miniconda/bin:$PATH
+# conda install scipy matplotlib
+
+# https://community.rstudio.com/t/rstudio-cloud-and-pyplot/45264/3
 # https://community.rstudio.com/t/matplotlib-inline-plots-with-reticulate-on-rstudio-server/16357/6
 library(reticulate)
 matplotlib <- import("matplotlib")
@@ -6,7 +16,6 @@ matplotlib$use("Agg", force = TRUE)
 ```
 
 ```{python}
-# https://community.rstudio.com/t/rstudio-cloud-and-pyplot/45264/3
 import numpy as np
 from scipy.spatial import Voronoi, ConvexHull, voronoi_plot_2d
 import matplotlib.pyplot as plt
