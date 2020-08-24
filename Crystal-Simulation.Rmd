@@ -1,8 +1,13 @@
 # Run instructions
 - import into https://rstudio.cloud/project
 - in the R console, run `install.packages("reticulate")`
-- in the terminal, run `pip install scipy matplotlib`
+- run the r chunk 1st to install conda in console
+<!-- - in the terminal, run `pip install scipy matplotlib` or u can run the bash chunk -->
 - then u can knit
+
+```{bash bash_setup, include=FALSE}
+pip install scipy matplotlib
+```
 
 ```{r setup, include=FALSE}
 # export PATH=~/.local/share/r-miniconda/bin:$PATH
